@@ -1,26 +1,41 @@
+require 'json'
+
 module Orm
     class Model
+
+        def initialize(attrs = {})
+            @data = {}
+            attrs.each do |key, value|
+                send(key, value)
+            end
+        end
+
         def self.inherited(child_class)
-            @table = child_class
-            @fields = child_class
-            self.write
+            child_class.instance_variable_set(:@table, child_class.name)
         end
+        
 
-        def self.print ()
-            puts 'hey', @table
-        end
-
-        def self.write
-            File.write('db.json', "#{@table}{}", mode:'a')
+        def save
+            self.class.write(@data)
         end
 
         def self.field(fieldName)
-            File.write('db.json', "#{fieldName}", mode:'a')
             define_method (fieldName) do |value|
-                File.write('db.json', "#{value}", mode:'a')
-                puts 'hi'
-                fieldName
+                @data[fieldName] = value
             end
+        end
+
+        def self.write(data)
+            file = "db.json"
+
+            db = File.exist?(file) ? JSON.parse(File.read(file)) : {}
+            puts @table
+
+            id = "#{@table}#{db.length + 1}"
+
+            db[id] = data
+
+            File.write(file, JSON.pretty_generate(db))
         end
 
     end
